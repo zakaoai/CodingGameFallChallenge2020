@@ -43,3 +43,13 @@ Quelques sites pour comprendre comment ça marche :
 - [Les algorithmes de chemin le plus court](https://www.codingame.com/playgrounds/1608/shortest-paths-with-dijkstras-algorithm/introduction)
 - [Principe de répartition de territoire Voronoi](https://www.codingame.com/playgrounds/243/voronoi-diagrams/what-are-voronoi-diagrams)
 
+## Les algos de recherche
+
+Pour beaucoup de ces challenges vous allez avoir besoin alors de faire des recherches de solution. Il existe évidement différents principes de recherche tel que :
+
+- Minimax [Wikipedia](https://fr.wikipedia.org/wiki/Algorithme_minimax)
+- monte-carlo [Wikipedia](https://fr.wikipedia.org/wiki/Recherche_arborescente_Monte-Carlo)
+- hill-climbing [Wikipedia](https://en.wikipedia.org/wiki/Hill_climbing)
+- beam-search [Wikipedia FR](https://fr.wikipedia.org/wiki/Algorithme_de_recherche_en_faisceau) [WikiBooks EN](https://en.wikibooks.org/wiki/Artificial_Intelligence/Search/Heuristic_search/Beam_search)
+- Algorithme A* [Wikipedia](https://fr.wikipedia.org/wiki/Algorithme_A*)
+- D'autres Algorithmes de Recherche [Wikibooks](https://en.wikibooks.org/wiki/Artificial_Intelligence/Search)
