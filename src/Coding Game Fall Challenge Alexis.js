@@ -4,6 +4,10 @@
  **/
 let nbSpellInPlay;
 let commandes = [];
+
+let sortJoueur1 = [];
+let sortJoueur2 = [];
+
 let joueur1 = {};
 let joueur2 = {};
 
@@ -28,10 +32,33 @@ function sortedCommandeByPriceAndByCost(commande, commande1) {
 	return result;
 }
 
+function getCommandesPossibles() {
+	return commandes.filter((commande) => {
+		var sum = joueur1.inventaire.map((ingredient, idx) => {
+			return ingredient + commande.cout[idx];
+		});
+		return !sum.find((ingredient) => ingredient < 0);
+	});
+}
+
+function getSortsPossibles() {
+	return sortJoueur1.filter((sort) => {
+		var sum = joueur1.inventaire.map((ingredient, idx) => {
+			return ingredient + sort.cout[idx];
+		});
+		return !sum.find((ingredient) => ingredient < 0) && sort.castable;
+	});
+}
+
 function play() {
 	commandes = commandes.sort(sortedCommandeByPriceAndByCost);
+	const commandesPossibles = getCommandesPossibles().sort(sortedCommandeByPriceAndByCost);
+	const sortsPossibles = getSortsPossibles();
 
-	log(true, 'Commandes :', commandes);
+	log(false, 'Commandes :', commandes);
+	log(false, 'Commandes Possible :', commandesPossibles);
+	log(true, 'Sort :', sortJoueur1);
+	log(true, 'Sorts Possibles :', sortsPossibles);
 
 	console.log('BREW ' + commandes[0].id);
 }
@@ -41,9 +68,11 @@ while (true) {
 	nbSpellInPlay = parseInt(readline()); // the number of spells and recipes in play
 
 	commandes = [];
+	sortJoueur1 = [];
+	sortJoueur2 = [];
 
 	for (let i = 0; i < nbSpellInPlay; i++) {
-		initCommande();
+		initActions();
 	}
 
 	joueur1 = readPlayer();
@@ -71,7 +100,7 @@ function readPlayer() {
 	return player;
 }
 
-function initCommande() {
+function initActions() {
 	var inputs = readline().split(' ');
 	const actionId = parseInt(inputs[0]); // the unique ID of this spell or recipe
 	const actionType = inputs[1]; // in the first league: BREW; later: CAST, OPPONENT_CAST, LEARN, BREW
@@ -85,7 +114,7 @@ function initCommande() {
 	const castable = inputs[9] !== '0'; // in the first league: always 0; later: 1 if this is a castable player spell
 	const repeatable = inputs[10] !== '0'; // for the first two leagues: always 0; later: 1 if this is a repeatable player spell
 
-	const commande = {
+	const action = {
 		id: actionId,
 		actionType,
 		cout: [delta0, delta1, delta2, delta3],
@@ -96,6 +125,20 @@ function initCommande() {
 		repeatable,
 	};
 
-	commandes.push(commande);
+	switch (action.actionType) {
+		case 'BREW':
+			commandes.push(action);
+			break;
+		case 'CAST':
+			sortJoueur1.push(action);
+			break;
+		case 'OPPONENT_CAST':
+			sortJoueur2.push(action);
+			break;
+
+		default:
+			break;
+	}
+
 	return inputs;
 }
