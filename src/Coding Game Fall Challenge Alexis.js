@@ -1,89 +1,181 @@
-/**
- * Auto-generated code below aims at helping you parse
- * the standard input according to the problem statement.
- **/
+const { performance } = require('perf_hooks');
+
+// GAME CONST
+const INVENTORY_SIZE = 10;
+
+// Storage Const
 let nbSpellInPlay;
-let commandes = [];
+let potionsList = [];
 
-let sortJoueur1 = [];
-let sortJoueur2 = [];
+let mySpells = [];
+let opSpells = [];
 
-let joueur1 = {};
-let joueur2 = {};
+let me = {};
+let op = {};
+let turn = 0;
 
-// LOG
+// Constante Debug Perf
+const DEBUG_MODE = false;
+const DEBUG_PERF = true;
+
+// Perf Functions
+let perfs = [];
+
+function logPerf() {
+	perfs.push(performance.now());
+
+	log(
+		DEBUG_PERF,
+		'Turn n°: %s, Perf n° %s, time elapse since begin %d, time elapse since last perf %d',
+		turn,
+		perfs.length - 1,
+		perfs[perfs.length - 1] - perfs[0],
+		perfs[perfs.length - 1] - perfs[perfs.length - 2]
+	);
+}
+
+function resetPerf() {
+	perfs = [];
+	perfs.push(performance.now());
+}
+
+// LOG Functions
 function log(show, message, ...obj) {
-	if (show) {
+	if (DEBUG_MODE && show) {
 		console.error(message, ...obj);
 	}
 }
 
-// Sort
+function stringify(obj) {
+	return JSON.stringify(obj);
+}
 
-function sortedCommandeByPriceAndByCost(commande, commande1) {
+// Sort Functions
+
+function sortedPotionsByPriceAndByCost(commande, commande1) {
 	const result = commande1.price - commande.price;
 
 	if (result === 0) {
-		const coutCommande1 = -commande1.cout.reduce((total, coutIngredient) => total + coutIngredient, 0);
-		const coutCommande = -commande.cout.reduce((total, coutIngredient) => total + coutIngredient, 0);
+		const coutCommande1 = -inventorySize(commande1.cost);
+		const coutCommande = -inventorySize(commande.cost);
 
 		return coutCommande - coutCommande1;
 	}
 	return result;
 }
 
-function getCommandesPossibles() {
-	return commandes.filter((commande) => {
-		var sum = joueur1.inventaire.map((ingredient, idx) => {
-			return ingredient + commande.cout[idx];
-		});
-		return !sum.find((ingredient) => ingredient < 0);
+// Math Functions
+
+function sumTable(tableau, tableau1) {
+	return tableau.map((ingredient, idx) => {
+		return ingredient + tableau1[idx];
 	});
 }
 
-function getSortsPossibles() {
-	return sortJoueur1.filter((sort) => {
-		var sum = joueur1.inventaire.map((ingredient, idx) => {
-			return ingredient + sort.cout[idx];
-		});
-		return !sum.find((ingredient) => ingredient < 0) && sort.castable;
+function inventorySize(inventory) {
+	return inventory.reduce((total, ingredient) => total + ingredient, 0);
+}
+
+// Filter Functions
+
+// List All possible potion with the inventory avaible
+function getCraftablePotions(inventory) {
+	return potionsList.filter((potion) => !sumTable(inventory, potion.cost).find((ingredient) => ingredient < 0));
+}
+
+/**
+ * List all castable spells
+ * @param {*} spells Current List of Spells
+ * @param {*} inventory Current List of avaible ingredient (only those we want to use)
+ * @param {*} nbSlotsReserved Number of reserved slot in inventory ( ingredient we want to save )
+ */
+function getCastableSpells(spells, inventory, nbSlotsReserved = 0) {
+	return spells.filter((sort) => {
+		const somme = sumTable(inventory, sort.cost);
+
+		return (
+			!somme.find((ingredient) => ingredient < 0) &&
+			inventorySize(somme) + nbSlotsReserved <= INVENTORY_SIZE &&
+			sort.castable
+		);
 	});
 }
 
+// Games Functions
+
+let listOfSortSinceRest = [];
+/**
+ * Take a potion in the list ( the first one for eg) and check what is the ingredient to get for this potion
+ * Reserved all ingredient we already have
+ * do Spells in order ( since the first spells are a chain)
+ */
+function nextPotionToDo() {
+	const commandeTodo = potionsList[0];
+
+	log(true, 'Commande à faire : ', commandeTodo);
+
+	let inventoryMinusCommande = sumTable(me.inventory, commandeTodo.cost);
+	let costLeft = inventoryMinusCommande.map((ingredient) => (ingredient < 0 ? ingredient : 0));
+	let inventoryLeft = inventoryMinusCommande.map((ingredient) => (ingredient > 0 ? ingredient : 0));
+	let numberSlotReserved = inventorySize(
+		sumTable(
+			costLeft,
+			commandeTodo.cost.map((cost) => -cost)
+		)
+	);
+	log(true, 'Cost Left', costLeft);
+	log(true, 'commande cost', commandeTodo.cost);
+	log(true, 'Slots Reserved :', numberSlotReserved);
+	let spellsAvaible = getCastableSpells(mySpells, inventoryLeft, numberSlotReserved).filter(
+		(sort) => !listOfSortSinceRest.some((usedSort) => usedSort.id === sort.id)
+	);
+	if (inventorySize(costLeft) === 0) {
+		return `BREW ${commandeTodo.id}`;
+	}
+	if (spellsAvaible.length === 0) {
+		listOfSortSinceRest = [];
+		return `REST`;
+	}
+	return `CAST ${spellsAvaible[0].id}`;
+}
+
+/**
+ * The BIG play function where update of current state go
+ * Log the result
+ */
 function play() {
-	commandes = commandes.sort(sortedCommandeByPriceAndByCost);
-	const commandesPossibles = getCommandesPossibles().sort(sortedCommandeByPriceAndByCost);
-	const sortsPossibles = getSortsPossibles();
+	potionsList = potionsList.sort(sortedPotionsByPriceAndByCost);
+	const commandesPossibles = getCraftablePotions(me.inventory).sort(sortedPotionsByPriceAndByCost);
+	const sortsPossibles = getCastableSpells(mySpells, me.inventory);
 
-	log(false, 'Commandes :', commandes);
+	log(false, 'Commandes :', potionsList);
 	log(false, 'Commandes Possible :', commandesPossibles);
-	log(true, 'Sort :', sortJoueur1);
-	log(true, 'Sorts Possibles :', sortsPossibles);
+	log(false, 'Sort :', mySpells);
+	log(false, 'Sorts Possibles :', sortsPossibles);
 
-	console.log('BREW ' + commandes[0].id);
+	//console.log('BREW ' + commandes[0].id);
+
+	console.log(nextPotionToDo());
 }
 
-// game loop
+// The Game Loop
 while (true) {
+	resetPerf();
 	nbSpellInPlay = parseInt(readline()); // the number of spells and recipes in play
 
-	commandes = [];
-	sortJoueur1 = [];
-	sortJoueur2 = [];
+	potionsList = [];
+	mySpells = [];
+	opSpells = [];
 
 	for (let i = 0; i < nbSpellInPlay; i++) {
 		initActions();
 	}
 
-	joueur1 = readPlayer();
-	joueur2 = readPlayer();
-
-	// Write an action using console.log()
-	// To debug: console.error('Debug messages...');
-
-	// in the first league: BREW <id> | WAIT; later: BREW <id> | CAST <id> [<times>] | LEARN <id> | REST | WAIT
+	me = readPlayer();
+	op = readPlayer();
 
 	play();
+	turn++;
 }
 
 function readPlayer() {
@@ -95,7 +187,7 @@ function readPlayer() {
 	const inv3 = parseInt(inputs[3]);
 	const score = parseInt(inputs[4]);
 
-	const player = { inventaire: [inv0, inv1, inv2, inv3], score };
+	const player = { inventory: [inv0, inv1, inv2, inv3], score };
 
 	return player;
 }
@@ -117,7 +209,7 @@ function initActions() {
 	const action = {
 		id: actionId,
 		actionType,
-		cout: [delta0, delta1, delta2, delta3],
+		cost: [delta0, delta1, delta2, delta3],
 		price,
 		tomeIndex,
 		taxCount,
@@ -127,13 +219,13 @@ function initActions() {
 
 	switch (action.actionType) {
 		case 'BREW':
-			commandes.push(action);
+			potionsList.push(action);
 			break;
 		case 'CAST':
-			sortJoueur1.push(action);
+			mySpells.push(action);
 			break;
 		case 'OPPONENT_CAST':
-			sortJoueur2.push(action);
+			opSpells.push(action);
 			break;
 
 		default:
