@@ -20,6 +20,9 @@ Une branche sur le Repo par developpeur.
 
 Penser à bien commenter vos fonctions. Car plus vous écrivez du code plus le fichier deviendra long car il n'y a qu'un seul fichier.
 
+# Projet pour coder en Java avec le plugin Coding Game 
+https://github.com/tiramon/CGFileMerge
+
 # Aide pour le challenge
 
 Comme souvent les challenges Coding Game tournent souvent autour de certains grands concepts connu :
